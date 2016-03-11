@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+
+_wifi () {
+  local prefix="${PASSWORD_STORE_DIR:-$HOME/.password-store/}wifi/"
+  local cur="${COMP_WORDS[COMP_CWORD]}"
+
+  items=($(compgen -f ${prefix}$cur))
+  for item in ${items[@]}; do
+    item="${item%.gpg}"
+    COMPREPLY+=(${item#$prefix})
+  done
+}

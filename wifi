@@ -1,0 +1,14 @@
+#!/usr/bin/env sh
+set -e
+
+network_iface=wlan0
+network_cfg=/etc/network/interfaces
+wpa_ssid="$1"
+wpa_psk=$(wpa_passphrase "$1" "$(pass wifi/$1)" | grep "[^#]psk=" | cut -d '=' -f 2)
+
+sudo sed -i'' -e "s/wpa-ssid .*/wpa-ssid \"$wpa_ssid\"/" \
+              -e "s/wpa-psk .*/wpa-ssid $wpa_psk/"       \
+              "$network_cfg"
+
+sudo ifdown "$network_iface"
+sudo ifup "$network_iface"
