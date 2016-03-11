@@ -10,3 +10,5 @@ _wifi () {
     COMPREPLY+=(${item#$prefix})
   done
 }
+
+complete -F _wifi wifi
