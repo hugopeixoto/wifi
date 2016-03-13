@@ -2,7 +2,7 @@
 set -e
 
 network_iface=wlan0
-network_cfg=/etc/network/interfaces
+network_cfg=/etc/network/interfaces.d/wifi
 wpa_ssid="$1"
 wpa_psk=$(wpa_passphrase "$1" "$(pass wifi/$1)" | grep "[^#]psk=" | cut -d '=' -f 2)
 
