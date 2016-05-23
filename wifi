@@ -1,11 +1,12 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
+
 WIFI_IF="${WIFI_IF:-wlan0}"
 WIFI_CFG="${WIFI_CFG:-/etc/network/interfaces.d/wifi}"
 
 wifi_connect() {
-  wpa_ssid="$1"
-  wpa_psk=$(wpa_passphrase "$1" "$(pass wifi/$1)" |
-      grep "[^#]psk=" | cut -d '=' -f 2)
+  local wpa_ssid="$1"
+  local wpa_psk=$(wpa_passphrase "$1" "$(pass "wifi/$1")" |
+    grep "[^#]psk=" | cut -d= -f2)
 
   sudo tee "$WIFI_CFG" > /dev/null <<EOF
 allow-hotplug $WIFI_IF
@@ -19,8 +20,7 @@ EOF
 }
 
 wifi_scan() {
-  sudo /sbin/iwlist "$WIFI_IF" scan | grep -w ESSID |
-    cut -d: -f2 | sed -e 's/"\(.*\)"/\1/'
+  sudo iwlist "$WIFI_IF" scan | grep -w ESSID | cut -d: -f2 | tr -d \"
 }
 
 case "$1" in
