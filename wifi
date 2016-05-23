@@ -1,14 +1,38 @@
 #!/usr/bin/env sh
-set -e
+WIFI_IF="${WIFI_IF:-wlan0}"
+WIFI_CFG="${WIFI_CFG:-/etc/network/interfaces.d/wifi}"
 
-network_iface=wlan0
-network_cfg=/etc/network/interfaces.d/wifi
-wpa_ssid="$1"
-wpa_psk=$(wpa_passphrase "$1" "$(pass wifi/$1)" | grep "[^#]psk=" | cut -d '=' -f 2)
+wifi_connect() {
+  wpa_ssid="$1"
+  wpa_psk=$(wpa_passphrase "$1" "$(pass wifi/$1)" |
+      grep "[^#]psk=" | cut -d '=' -f 2)
 
-sudo sed -i'' -e "s/wpa-ssid .*/wpa-ssid \"$wpa_ssid\"/" \
-              -e "s/wpa-psk .*/wpa-ssid $wpa_psk/"       \
-              "$network_cfg"
+  sudo tee "$WIFI_CFG" > /dev/null <<EOF
+allow-hotplug $WIFI_IF
+iface $WIFI_IF inet dhcp
+  wpa-ssid "$wpa_ssid"
+  wpa-psk $wpa_psk
+EOF
 
-sudo ifdown "$network_iface"
-sudo ifup "$network_iface"
+  sudo ifdown "$WIFI_IF"
+  sudo ifup "$WIFI_IF"
+}
+
+wifi_scan() {
+  sudo /sbin/iwlist "$WIFI_IF" scan | grep -w ESSID |
+    cut -d: -f2 | sed -e 's/"\(.*\)"/\1/'
+}
+
+case "$1" in
+  -s|--scan)
+    shift
+    wifi_scan
+    ;;
+  --)
+    shift
+    wifi_connect "$1"
+    ;;
+  *)
+    wifi_connect "$1"
+    ;;
+esac

@@ -1,14 +1,21 @@
-#!/usr/bin/env bash
+#!/usr/bin/env sh
 
-_wifi () {
-  local prefix="${PASSWORD_STORE_DIR:-$HOME/.password-store/}wifi/"
-  local cur="${COMP_WORDS[COMP_CWORD]}"
+_wifi() {
+  local current="${COMP_WORDS[COMP_CWORD]}"
 
-  items=($(compgen -f ${prefix}$cur))
-  for item in ${items[@]}; do
-    item="${item%.gpg}"
-    COMPREPLY+=(${item#$prefix})
-  done
+  if [ "$COMP_CWORD" -eq "1" ]; then
+    COMPREPLY+=($(compgen -W "--scan" -- "$current"))
+  fi
+
+  if [ "$COMP_CWORD" = "1" -o \( "$COMP_CWORD" = "2" -a "${COMP_WORDS[COMP_CWORD]}" = "--" \) ]; then
+    local prefix="${PASSWORD_STORE_DIR:-$HOME/.password-store/}wifi/"
+
+    items=($(compgen -f ${prefix}$current))
+    for item in ${items[@]}; do
+      item="${item%.gpg}"
+      COMPREPLY+=(${item#$prefix})
+    done
+  fi
 }
 
 complete -F _wifi wifi
