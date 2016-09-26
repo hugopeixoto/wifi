@@ -2,6 +2,7 @@
 
 _wifi() {
   local current="${COMP_WORDS[COMP_CWORD]}"
+  local IFS=$'\n'
 
   if [ "$COMP_CWORD" -eq "1" ]; then
     COMPREPLY+=($(compgen -W "--scan" -- "$current"))
@@ -10,10 +11,10 @@ _wifi() {
   if [ "$COMP_CWORD" = "1" -o \( "$COMP_CWORD" = "2" -a "${COMP_WORDS[COMP_CWORD]}" = "--" \) ]; then
     local prefix="${PASSWORD_STORE_DIR:-$HOME/.password-store/}wifi/"
 
-    items=($(compgen -f ${prefix}$current))
+    items=("$(compgen -f ${prefix}$current)")
     for item in ${items[@]}; do
       item="${item%.gpg}"
-      COMPREPLY+=(${item#$prefix})
+      COMPREPLY+=( "$(printf %q%s "${item#$prefix}")" )
     done
   fi
 }
