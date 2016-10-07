@@ -20,7 +20,7 @@ EOF
 }
 
 wifi_scan() {
-  sudo iwlist "$WIFI_IF" scan | grep -w ESSID | cut -d: -f2 | tr -d \"
+  sudo iwlist "$WIFI_IF" scan | grep -w ESSID | cut -d: -f2 | tr -d \" | grep -v '^\\x00$' | sort -u
 }
 
 case "$1" in
