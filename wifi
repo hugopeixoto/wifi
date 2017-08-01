@@ -3,30 +3,70 @@
 WIFI_IF="${WIFI_IF:-wlan0}"
 WIFI_CFG="${WIFI_CFG:-/etc/network/interfaces.d/wifi}"
 
-wifi_connect() {
-  local wpa_ssid="$1"
-  local wpa_psk=$(wpa_passphrase "$1" "$(pass "wifi/$1")" |
+wifi_restart() {
+  sudo ifdown "$WIFI_IF"
+  sudo ifup "$WIFI_IF"
+}
+
+wifi_connect_open() {
+  local ssid="$1"
+
+  sudo tee "$WIFI_CFG" > /dev/null <<EOF
+allow-hotplug $WIFI_IF
+iface $WIFI_IF inet dhcp
+  wireless-essid $ssid
+EOF
+}
+
+wifi_connect_wpa() {
+  local ssid="$1"
+  local pass="$2"
+
+  local wpa_psk=$(wpa_passphrase "$ssid" "$pass" |
     grep "[^#]psk=" | cut -d= -f2)
 
   sudo tee "$WIFI_CFG" > /dev/null <<EOF
 allow-hotplug $WIFI_IF
 iface $WIFI_IF inet dhcp
-  wpa-ssid "$wpa_ssid"
+  wpa-ssid "$ssid"
   wpa-psk $wpa_psk
 EOF
+}
 
-  sudo ifdown "$WIFI_IF"
-  sudo ifup "$WIFI_IF"
+wifi_connect() {
+  local ssid="$1"
+
+  #pass "wifi/$ssid" > /dev/null || pass insert "wifi/$ssid"
+
+  #if [ $? -ne 0 ]; then
+  #  echo "aborted, no password" 2> /dev/null
+  #  return
+  #fi
+
+  local pass="$(pass "wifi/$ssid")"
+
+  if [ -z "$pass" ]; then
+    wifi_connect_open "$ssid"
+  else
+    wifi_connect_wpa "$ssid" "$pass"
+  fi
+
+  wifi_restart
 }
 
 wifi_scan() {
-  sudo iwlist "$WIFI_IF" scan | grep -w ESSID | cut -d: -f2 | tr -d \" | grep -v '^\\x00$' | sort -u
+  sudo iwlist "$WIFI_IF" scan |
+    egrep "Encryption key:|ESSID:" | paste -sd ',\n' |
+    sed -e 's/.*Encryption key:\(on\|off\),\s*ESSID:"\(.*\)"/\1 \2/' \
+        -e 's/^off/open/' \
+        -e 's/^on/encrypted/' |
+    sort -u
 }
 
 case "$1" in
   -s|--scan)
     shift
-    wifi_scan
+    wifi_scan | column -t
     ;;
   --)
     shift
